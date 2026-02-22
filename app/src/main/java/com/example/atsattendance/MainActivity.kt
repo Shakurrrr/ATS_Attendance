@@ -10,11 +10,8 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.atsattendance.api.ApiClient
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.chip.Chip
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.textview.MaterialTextView
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -29,14 +26,11 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
-    // Views (must match IDs in activity_main.xml)
+    // Views (must match activity_main.xml)
     private lateinit var pdfView: ImageView
     private lateinit var fetchReportButton: MaterialButton
     private lateinit var downloadReportButton: MaterialButton
-    private lateinit var topAppBar: MaterialToolbar
     private lateinit var bottomNav: BottomNavigationView
-    private lateinit var chipOpen: Chip
-    private lateinit var chipFilter: Chip
     private lateinit var tvDate: MaterialTextView
     private lateinit var emptyState: View
 
@@ -56,68 +50,39 @@ class MainActivity : AppCompatActivity() {
         bindViews()
         setupUi()
         setupClicks()
-        setContentView(R.layout.activity_main)
-        applyInsets()
+        applyStatusBarPadding()
     }
 
     private fun bindViews() {
         pdfView = findViewById(R.id.pdfView)
         fetchReportButton = findViewById(R.id.fetchReportButton)
         downloadReportButton = findViewById(R.id.downloadReportButton)
-        topAppBar = findViewById(R.id.topAppBar)
         bottomNav = findViewById(R.id.bottomNav)
-        chipOpen = findViewById(R.id.chipOpen)
-        chipFilter = findViewById(R.id.chipFilter)
         tvDate = findViewById(R.id.tvDate)
         emptyState = findViewById(R.id.emptyState)
     }
 
-    private fun applyInsets() {
-        val root = findViewById<View>(R.id.root)
-
-        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-
-            // push everything below status bar; keep your existing padding if any
-            v.setPadding(v.paddingLeft, top, v.paddingRight, bottom)
-            insets
-        }
-    }
-
     private fun setupUi() {
-        // Download hidden until a report is fetched
         downloadReportButton.visibility = View.GONE
         downloadReportButton.isEnabled = false
-
-        // Empty placeholder visible until we render a PDF
         emptyState.visibility = View.VISIBLE
-
-        // Show current date in UI
         tvDate.text = currentDate
     }
 
     private fun setupClicks() {
-        // Sticky buttons
-        fetchReportButton.setOnClickListener { fetchReport(currentDate) }
+
+        // Fetch button
+        fetchReportButton.setOnClickListener {
+            fetchReport(currentDate)
+        }
+
+        // Download button
         downloadReportButton.setOnClickListener {
-            val file = currentFile
-            if (file != null) downloadFile(file)
-            else Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+            currentFile?.let { downloadFile(it) }
+                ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
         }
 
-        // Top bar
-        topAppBar.setNavigationOnClickListener {
-            bottomNav.selectedItemId = R.id.nav_home
-            Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
-        }
-
-
-        // Chips
-        chipOpen.setOnClickListener { openCurrentReportIfAvailable() }
-        chipFilter.setOnClickListener { openDatePicker() }
-
-        // Bottom nav
+        // Bottom navigation
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
@@ -136,46 +101,115 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Long press on date to open picker
+        tvDate.setOnClickListener {
+            openDatePicker()
+        }
+    }
+
+    private fun applyStatusBarPadding() {
+        val scroll = findViewById<View>(R.id.contentScroll)
+
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { v, insets ->
+            val topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            // add status bar height on top of your existing padding
+            v.setPadding(v.paddingLeft, topInset + 16, v.paddingRight, v.paddingBottom)
+            insets
+        }
     }
 
     private fun openDatePicker() {
         val cal = Calendar.getInstance()
 
-        // Prefill with currently selected date
         val parts = currentDate.split("-")
         if (parts.size == 3) {
-            val y = parts[0].toIntOrNull()
-            val m = parts[1].toIntOrNull()
-            val d = parts[2].toIntOrNull()
-            if (y != null && m != null && d != null) {
-                cal.set(Calendar.YEAR, y)
-                cal.set(Calendar.MONTH, m - 1)
-                cal.set(Calendar.DAY_OF_MONTH, d)
-            }
+            cal.set(Calendar.YEAR, parts[0].toInt())
+            cal.set(Calendar.MONTH, parts[1].toInt() - 1)
+            cal.set(Calendar.DAY_OF_MONTH, parts[2].toInt())
         }
 
-        val year = cal.get(Calendar.YEAR)
-        val month = cal.get(Calendar.MONTH)
-        val day = cal.get(Calendar.DAY_OF_MONTH)
-
-        DatePickerDialog(this, { _, y, m, d ->
-            val selected = String.format(Locale.US, "%04d-%02d-%02d", y, m + 1, d)
-            currentDate = selected
-            tvDate.text = selected
-
-            // Auto-fetch immediately for the selected date
-            fetchReport(selected)
-        }, year, month, day).show()
+        DatePickerDialog(
+            this,
+            { _, y, m, d ->
+                val selected = String.format(Locale.US, "%04d-%02d-%02d", y, m + 1, d)
+                currentDate = selected
+                tvDate.text = selected
+                fetchReport(selected)
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
     }
 
     private fun setLoading(isLoading: Boolean) {
         fetchReportButton.isEnabled = !isLoading
         fetchReportButton.text = if (isLoading) "Fetching..." else "Fetch"
-
-        // Keep download disabled while fetching
         downloadReportButton.isEnabled = !isLoading && currentFile != null
-        chipFilter.isEnabled = !isLoading
-        chipOpen.isEnabled = !isLoading
+    }
+
+    private fun fetchReport(date: String) {
+        setLoading(true)
+
+        ApiClient.service.getDailyReport(date)
+            .enqueue(object : Callback<ResponseBody> {
+
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    setLoading(false)
+
+                    if (!response.isSuccessful) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Failed to fetch the report",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return
+                    }
+
+                    val body = response.body() ?: return
+
+                    try {
+                        val file = File(filesDir, "attendance_report_$date.pdf")
+
+                        body.byteStream().use { input ->
+                            FileOutputStream(file).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+
+                        openPdfFile(file)
+                        showPage(0)
+
+                        currentFile = file
+                        showDownloadButton()
+
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Report loaded for $date",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Error: ${e.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    setLoading(false)
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Error: ${t.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            })
     }
 
     private fun showDownloadButton() {
@@ -183,57 +217,6 @@ class MainActivity : AppCompatActivity() {
         downloadReportButton.isEnabled = true
         downloadReportButton.alpha = 0f
         downloadReportButton.animate().alpha(1f).setDuration(200).start()
-    }
-
-    private fun fetchReport(date: String) {
-        setLoading(true)
-
-        ApiClient.service.getDailyReport(date).enqueue(object : Callback<ResponseBody> {
-
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                setLoading(false)
-
-                if (!response.isSuccessful) {
-                    Toast.makeText(this@MainActivity, "Failed to fetch the report", Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                val body = response.body()
-                if (body == null) {
-                    Toast.makeText(this@MainActivity, "Empty response body", Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                try {
-                    // Save PDF to internal storage
-                    val file = File(filesDir, "attendance_report_$date.pdf")
-                    body.byteStream().use { input ->
-                        FileOutputStream(file).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-
-                    // Open + render first page
-                    openPdfFile(file)
-                    showPage(0)
-
-                    // Store for download/open
-                    currentFile = file
-
-                    // Show download button
-                    showDownloadButton()
-
-                    Toast.makeText(this@MainActivity, "Report loaded for $date", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    Toast.makeText(this@MainActivity, "Error saving/opening PDF: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                setLoading(false)
-                Toast.makeText(this@MainActivity, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
     }
 
     private fun openPdfFile(file: File) {
@@ -250,21 +233,16 @@ class MainActivity : AppCompatActivity() {
         val page = renderer.openPage(index)
         currentPage = page
 
-        val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(
+            page.width,
+            page.height,
+            Bitmap.Config.ARGB_8888
+        )
+
         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
         pdfView.setImageBitmap(bitmap)
 
-        // Hide empty placeholder when PDF renders
         emptyState.visibility = View.GONE
-    }
-
-    private fun openCurrentReportIfAvailable() {
-        if (currentFile == null || pdfRenderer == null) {
-            Toast.makeText(this, "No report yet. Fetch one first.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        showPage(0)
-        Toast.makeText(this, "Opened current report", Toast.LENGTH_SHORT).show()
     }
 
     private fun downloadFile(file: File) {
@@ -281,17 +259,19 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Error downloading file: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Error downloading file: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
     private fun closePdf() {
         currentPage?.close()
         currentPage = null
-
         pdfRenderer?.close()
         pdfRenderer = null
-
         fileDescriptor?.close()
         fileDescriptor = null
     }
