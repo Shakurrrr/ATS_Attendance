@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Accent -->
+    <color name="accent">#16D6D0</color>
+    <color name="text_on_accent">#001314</color>
+
+    <!-- Surfaces -->
+    <color name="surface_card">#14171C</color>
+    <color name="surface_inner">#0F1115</color>
+
+    <!-- Text -->
+    <color name="text_primary">#EAF0F6</color>
+    <color name="text_muted">#90A4AE</color>
+</resources>
