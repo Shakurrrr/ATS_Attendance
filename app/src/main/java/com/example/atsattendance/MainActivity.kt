@@ -21,6 +21,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
 import java.util.Locale
+import android.content.Intent
 
 class MainActivity : AppCompatActivity() {
 
@@ -82,16 +83,15 @@ class MainActivity : AppCompatActivity() {
         // Bottom navigation
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
-                    true
-                }
+                R.id.nav_home -> true
                 R.id.nav_attendance -> {
-                    Toast.makeText(this, "Attendance", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, AttendanceActivity::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_reports -> {
-                    Toast.makeText(this, "Reports", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, ReportsActivity::class.java))
+                    finish()
                     true
                 }
                 else -> false

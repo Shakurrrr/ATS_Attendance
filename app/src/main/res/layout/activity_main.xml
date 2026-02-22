@@ -9,81 +9,24 @@
     android:background="@drawable/bg_screen"
     tools:context=".MainActivity">
 
-<<<<<<< HEAD
-    <!-- Main content (no toolbar, no chips) -->
-=======
-    <!-- Top App Bar -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topAppBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:title="ATS Attendance"
-        android:titleTextColor="@color/text_primary"
-        app:navigationIcon="@drawable/ic_home"
-        app:titleCentered="false"
-        android:background="@android:color/transparent" />
-
-    <!-- Main content -->
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
     <androidx.core.widget.NestedScrollView
         android:id="@+id/contentScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-<<<<<<< HEAD
         android:paddingTop="36dp"
         android:paddingBottom="230dp"
         android:clipToPadding="false">
-=======
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:paddingBottom="230dp">
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-<<<<<<< HEAD
-            android:padding="16dp"
-            android:paddingTop="22dp">
-=======
             android:padding="16dp">
 
-            <!-- Quick chips row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipOpen"
-                    style="@style/ChipPill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Open"
-                    app:chipIcon="@drawable/ic_open_in_new"
-                    app:chipIconVisible="true" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipFilter"
-                    style="@style/ChipPill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:text="Filter"
-                    app:chipIcon="@drawable/ic_filter_list"
-                    app:chipIconVisible="true" />
-            </LinearLayout>
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
-
-            <!-- Preview Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/previewCard"
                 android:layout_width="match_parent"
                 android:layout_height="420dp"
-<<<<<<< HEAD
-=======
-                android:layout_marginTop="16dp"
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
                 app:cardCornerRadius="26dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="@color/surface_card">
@@ -94,7 +37,6 @@
                     android:orientation="vertical"
                     android:padding="14dp">
 
-                    <!-- Header -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -110,10 +52,6 @@
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
-<<<<<<< HEAD
-=======
-                        <!-- ✅ Added (fixes your tvDate error) -->
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
                         <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/tvDate"
                             android:layout_width="wrap_content"
@@ -123,7 +61,6 @@
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <!-- Inner preview surface -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
@@ -137,10 +74,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
 
-<<<<<<< HEAD
-=======
-                            <!-- Rendered PDF bitmap goes here -->
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
                             <ImageView
                                 android:id="@+id/pdfView"
                                 android:layout_width="match_parent"
@@ -151,10 +84,6 @@
                                 android:contentDescription="@string/app_name"
                                 tools:src="@drawable/ic_launcher_foreground" />
 
-<<<<<<< HEAD
-=======
-                            <!-- ✅ Added (fixes your emptyState error) -->
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
                             <LinearLayout
                                 android:id="@+id/emptyState"
                                 android:layout_width="match_parent"
@@ -176,11 +105,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="6dp"
-<<<<<<< HEAD
                                     android:text="Tap Fetch to preview the PDF."
-=======
-                                    android:text="Tap Fetch to preview today’s PDF."
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
                                     android:textColor="@color/text_muted"
                                     android:textSize="13sp" />
                             </LinearLayout>
@@ -191,18 +116,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-<<<<<<< HEAD
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-=======
-
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-
-
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
-    <!-- Sticky Action Bar (Fetch + Download) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/stickyActionsCard"
         android:layout_width="match_parent"
@@ -250,11 +166,6 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-<<<<<<< HEAD
-    <!-- Bottom Nav Dock -->
-=======
-    <!-- Floating Bottom Nav Dock -->
->>>>>>> e73318f4ca006bfca6253a66c2f87c659050adfb
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomNavCard"
         android:layout_width="match_parent"
