@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Chip pill -->
+    <style name="ChipPill" parent="Widget.MaterialComponents.Chip.Action">
+        <item name="chipBackgroundColor">@color/surface_card</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="chipCornerRadius">999dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+    </style>
+
+    <!-- Primary pill button -->
+    <style name="PrimaryPillButton" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">18dp</item>
+        <item name="backgroundTint">@color/accent</item>
+        <item name="android:textColor">@color/text_on_accent</item>
+        <item name="iconTint">@color/text_on_accent</item>
+    </style>
+
+    <!-- Outline pill button -->
+    <style name="OutlinePillButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">18dp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="iconTint">@color/text_primary</item>
+        <item name="strokeColor">@color/text_muted</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+</resources>
