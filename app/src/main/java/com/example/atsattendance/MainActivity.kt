@@ -21,8 +21,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
 import java.util.Locale
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         bindViews()
         setupUi()
         setupClicks()
-        applyStatusBarPadding()
     }
 
     private fun bindViews() {
@@ -104,17 +101,6 @@ class MainActivity : AppCompatActivity() {
         // Long press on date to open picker
         tvDate.setOnClickListener {
             openDatePicker()
-        }
-    }
-
-    private fun applyStatusBarPadding() {
-        val scroll = findViewById<View>(R.id.contentScroll)
-
-        ViewCompat.setOnApplyWindowInsetsListener(scroll) { v, insets ->
-            val topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            // add status bar height on top of your existing padding
-            v.setPadding(v.paddingLeft, topInset + 16, v.paddingRight, v.paddingBottom)
-            insets
         }
     }
 
