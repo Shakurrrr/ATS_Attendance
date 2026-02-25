@@ -37,6 +37,7 @@
                     android:orientation="vertical"
                     android:padding="14dp">
 
+                    <!-- ✅ Header row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -44,6 +45,7 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tvReportTitle"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -60,6 +62,38 @@
                             android:textColor="@color/text_muted"
                             android:textSize="12sp" />
                     </LinearLayout>
+
+                    <!-- ✅ Mode toggle -->
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/toggleReportMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        app:singleSelection="true"
+                        app:selectionRequired="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDaily"
+                            style="@style/OutlinePillButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:text="Daily"
+                            app:icon="@drawable/ic_attendance"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnWeekly"
+                            style="@style/OutlinePillButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:text="Weekly"
+                            app:icon="@drawable/ic_report"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
 
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
@@ -105,7 +139,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="6dp"
-                                    android:text="Tap Fetch to preview the PDF."
+                                    android:text="Tap  to preview the PDF."
                                     android:textColor="@color/text_muted"
                                     android:textSize="13sp" />
                             </LinearLayout>
