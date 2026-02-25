@@ -1,4 +1,4 @@
-package com.example.atsattendance
+package com.ats.attendance
 
 import org.junit.Test
 

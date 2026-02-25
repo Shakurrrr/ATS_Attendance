@@ -1,6 +1,5 @@
-package com.example.atsattendance.ui.theme
+package com.ats.attendance.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
