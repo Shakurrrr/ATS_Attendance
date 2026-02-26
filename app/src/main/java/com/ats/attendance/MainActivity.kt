@@ -1,10 +1,16 @@
 package com.ats.attendance
 
 import android.app.DatePickerDialog
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
+import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
@@ -21,6 +27,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textview.MaterialTextView
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -50,6 +57,8 @@ class MainActivity : AppCompatActivity() {
     private var currentMode: ReportMode = ReportMode.DAILY
 
     private val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
+
+    private var downloadUrl: String? = null  // Variable to hold the download URL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,8 +109,17 @@ class MainActivity : AppCompatActivity() {
         fetchReportButton.setOnClickListener { fetchReport() }
 
         downloadReportButton.setOnClickListener {
-            currentFile?.let { downloadToPublicDownloads(it) }
-                ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+            downloadUrl?.let {
+                lifecycleScope.launch {
+                    try {
+                        val sourceFile = repo.downloadToCache(it)  // Download the PDF file to cache
+                        DownloadUtils.savePdfToDownloads(this@MainActivity, sourceFile)  // Save it to Downloads folder
+                        Toast.makeText(this@MainActivity, "PDF saved to Downloads", Toast.LENGTH_SHORT).show()
+                    } catch (e: IOException) {
+                        Toast.makeText(this@MainActivity, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
         }
 
         toggleReportMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -118,12 +136,12 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_home -> true
                 R.id.nav_attendance -> {
-                    startActivity(android.content.Intent(this, AttendanceActivity::class.java))
+                    startActivity(Intent(this, AttendanceActivity::class.java))
                     finish()
                     true
                 }
                 R.id.nav_reports -> {
-                    startActivity(android.content.Intent(this, ReportsActivity::class.java))
+                    startActivity(Intent(this, ReportsActivity::class.java))
                     finish()
                     true
                 }
@@ -161,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     private fun setLoading(isLoading: Boolean) {
         fetchReportButton.isEnabled = !isLoading
         fetchReportButton.text = if (isLoading) "Loading..." else "Fetch"
-        downloadReportButton.isEnabled = !isLoading && currentFile != null
+        downloadReportButton.isEnabled = !isLoading && downloadUrl != null
     }
 
     private fun fetchReport() {
@@ -173,6 +191,12 @@ class MainActivity : AppCompatActivity() {
                 setLoading(true)
                 AutoAuth.ensureSignedIn()
 
+                // Fetch the download URL from the repository (Firebase backend will provide this URL ohh)
+                val url = repo.getDownloadUrl(storagePath) // Using the suspending function to get the URL
+
+                downloadUrl = url // Store the download URL here
+
+                // Now fetch the file itself for rendering in the PDF view
                 val file = repo.downloadToCache(storagePath)
                 currentFile = file
 
@@ -193,10 +217,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showDownloadButton() {
+        Log.d("Download", "Download Button is being shown!")
+
+        // Make the button visible and ensure it's fully visible
         downloadReportButton.visibility = View.VISIBLE
         downloadReportButton.isEnabled = true
-        downloadReportButton.alpha = 0f
-        downloadReportButton.animate().alpha(1f).setDuration(200).start()
+        downloadReportButton.alpha = 1f  // Make sure it's fully visible
+
+        // Hide the empty state view
         emptyState.visibility = View.GONE
     }
 
@@ -217,21 +245,6 @@ class MainActivity : AppCompatActivity() {
         val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
         pdfView.setImageBitmap(bitmap)
-    }
-
-    private fun downloadToPublicDownloads(file: File) {
-        try {
-            val label = ReportPathBuilder.displayLabel(currentMode, currentDate)
-            val niceName = when (currentMode) {
-                ReportMode.DAILY -> "ATS_Daily_$label.pdf"
-                ReportMode.WEEKLY -> "ATS_Weekly_$label.pdf"
-            }
-
-            DownloadUtils.savePdfToDownloads(this, file, niceName)
-            Toast.makeText(this, "Saved to Downloads", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun closePdf() {
