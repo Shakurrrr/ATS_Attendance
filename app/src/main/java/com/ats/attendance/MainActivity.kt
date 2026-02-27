@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUi() {
-        downloadReportButton.visibility = View.GONE
+        downloadReportButton.visibility = View.VISIBLE
         downloadReportButton.isEnabled = false
         emptyState.visibility = View.VISIBLE
 
@@ -196,30 +196,19 @@ class MainActivity : AppCompatActivity() {
 
                 openPdfFile(file)
                 showPage(0)
-                showDownloadButton()
+                downloadReportButton.isEnabled = true
+                emptyState.visibility = View.GONE
 
                 Toast.makeText(this@MainActivity, "Loaded: $label", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 currentFile = null
-                downloadReportButton.visibility = View.GONE
+                downloadReportButton.isEnabled = false
                 emptyState.visibility = View.VISIBLE
                 Toast.makeText(this@MainActivity, "Report not found: $label", Toast.LENGTH_SHORT).show()
             } finally {
                 setLoading(false)
             }
         }
-    }
-
-    private fun showDownloadButton() {
-        Log.d("Download", "Download Button is being shown!")
-
-        // Make the button visible and ensure it's fully visible
-        downloadReportButton.visibility = View.VISIBLE
-        downloadReportButton.isEnabled = true
-        downloadReportButton.alpha = 1f  // Make sure it's fully visible
-
-        // Hide the empty state view
-        emptyState.visibility = View.GONE
     }
 
     private fun openPdfFile(file: File) {

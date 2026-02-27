@@ -91,7 +91,7 @@ class ReportsActivity : AppCompatActivity() {
     private fun setupUi() {
         bottomNav.selectedItemId = R.id.nav_reports
 
-        downloadReportButton.visibility = View.GONE
+        downloadReportButton.visibility = View.VISIBLE
         downloadReportButton.isEnabled = false
         emptyState.visibility = View.VISIBLE
 
@@ -181,26 +181,19 @@ class ReportsActivity : AppCompatActivity() {
 
                 openPdfFile(file)
                 showPage(0)
-                showDownloadButton()
+                downloadReportButton.isEnabled = true
+                emptyState.visibility = View.GONE
 
                 Toast.makeText(this@ReportsActivity, "Loaded: $label", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 currentFile = null
-                downloadReportButton.visibility = View.GONE
+                downloadReportButton.isEnabled = false
                 emptyState.visibility = View.VISIBLE
                 Toast.makeText(this@ReportsActivity, "Report not found: $label", Toast.LENGTH_SHORT).show()
             } finally {
                 setLoading(false)
             }
         }
-    }
-
-    private fun showDownloadButton() {
-        downloadReportButton.visibility = View.VISIBLE
-        downloadReportButton.isEnabled = true
-        downloadReportButton.alpha = 0f
-        downloadReportButton.animate().alpha(1f).setDuration(200).start()
-        emptyState.visibility = View.GONE
     }
 
     private fun openPdfFile(file: File) {
