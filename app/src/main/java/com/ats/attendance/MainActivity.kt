@@ -58,8 +58,6 @@ class MainActivity : AppCompatActivity() {
 
     private val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
 
-    private var downloadUrl: String? = null  // Variable to hold the download URL
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -109,15 +107,17 @@ class MainActivity : AppCompatActivity() {
         fetchReportButton.setOnClickListener { fetchReport() }
 
         downloadReportButton.setOnClickListener {
-            downloadUrl?.let {
-                lifecycleScope.launch {
-                    try {
-                        val sourceFile = repo.downloadToCache(it)  // Download the PDF file to cache
-                        DownloadUtils.savePdfToDownloads(this@MainActivity, sourceFile)  // Save it to Downloads folder
-                        Toast.makeText(this@MainActivity, "PDF saved to Downloads", Toast.LENGTH_SHORT).show()
-                    } catch (e: IOException) {
-                        Toast.makeText(this@MainActivity, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            currentFile?.let { file ->
+                try {
+                    val label = ReportPathBuilder.displayLabel(currentMode, currentDate)
+                    val niceName = when (currentMode) {
+                        ReportMode.DAILY -> "ATS_Daily_$label.pdf"
+                        ReportMode.WEEKLY -> "ATS_Weekly_$label.pdf"
                     }
+                    DownloadUtils.savePdfToDownloads(this, file, niceName)
+                    Toast.makeText(this, "PDF saved to Downloads", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             } ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
         }
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     private fun setLoading(isLoading: Boolean) {
         fetchReportButton.isEnabled = !isLoading
         fetchReportButton.text = if (isLoading) "Loading..." else "Fetch"
-        downloadReportButton.isEnabled = !isLoading && downloadUrl != null
+        downloadReportButton.isEnabled = !isLoading && currentFile != null
     }
 
     private fun fetchReport() {
@@ -191,12 +191,6 @@ class MainActivity : AppCompatActivity() {
                 setLoading(true)
                 AutoAuth.ensureSignedIn()
 
-                // Fetch the download URL from the repository (Firebase backend will provide this URL ohh)
-                val url = repo.getDownloadUrl(storagePath) // Using the suspending function to get the URL
-
-                downloadUrl = url // Store the download URL here
-
-                // Now fetch the file itself for rendering in the PDF view
                 val file = repo.downloadToCache(storagePath)
                 currentFile = file
 
