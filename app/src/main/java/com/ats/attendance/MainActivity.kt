@@ -1,15 +1,11 @@
 package com.ats.attendance
 
 import android.app.DatePickerDialog
-import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
-import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
@@ -39,13 +35,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var tvDate: MaterialTextView
     private lateinit var tvReportTitle: MaterialTextView
-
     private lateinit var toggleReportMode: MaterialButtonToggleGroup
     private lateinit var btnDaily: MaterialButton
     private lateinit var btnWeekly: MaterialButton
-
     private lateinit var emptyState: View
-
     private lateinit var repo: StorageRepository
 
     private var currentFile: File? = null
@@ -57,7 +50,6 @@ class MainActivity : AppCompatActivity() {
     private var currentMode: ReportMode = ReportMode.DAILY
 
     private val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
-
     private var downloadUrl: String? = null  // Variable to hold the download URL
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,9 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         repo = StorageRepository(this)
 
-        bindViews()
-        setupUi()
-        setupClicks()
+        bindViews() // Bind views before setting up the UI or clicks
+        setupUi()  // Setting up initial UI configurations
+        setupClicks()  // Setting up click listeners
 
         lifecycleScope.launch {
             try {
@@ -80,8 +72,33 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Auth failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+
+        // Hide the download button initially
+        downloadReportButton.visibility = View.GONE
+
+        // Set up click listener for the PDF preview
+        pdfView.setOnClickListener {
+            // Show the download button when the user taps on the PDF preview
+            downloadReportButton.visibility = View.VISIBLE
+        }
+
+        // Set up the click listener for the download button
+        downloadReportButton.setOnClickListener {
+            downloadUrl?.let {
+                lifecycleScope.launch {
+                    try {
+                        val sourceFile = repo.downloadToCache(it)  // Download the PDF file to cache
+                        DownloadUtils.savePdfToDownloads(this@MainActivity, sourceFile)  // Save it to Downloads folder
+                        Toast.makeText(this@MainActivity, "PDF saved to Downloads", Toast.LENGTH_SHORT).show()
+                    } catch (e: IOException) {
+                        Toast.makeText(this@MainActivity, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+        }
     }
 
+    // Ensure this is called first in onCreate to bind the views before using them
     private fun bindViews() {
         pdfView = findViewById(R.id.pdfView)
         fetchReportButton = findViewById(R.id.fetchReportButton)
@@ -90,22 +107,25 @@ class MainActivity : AppCompatActivity() {
         tvDate = findViewById(R.id.tvDate)
         tvReportTitle = findViewById(R.id.tvReportTitle)
         emptyState = findViewById(R.id.emptyState)
-
         toggleReportMode = findViewById(R.id.toggleReportMode)
         btnDaily = findViewById(R.id.btnDaily)
         btnWeekly = findViewById(R.id.btnWeekly)
     }
 
     private fun setupUi() {
+        // Ensure that the buttons are set up and ready
         downloadReportButton.visibility = View.GONE
         downloadReportButton.isEnabled = false
         emptyState.visibility = View.VISIBLE
 
+        // This line was causing the issue due to toggleReportMode not being initialized properly
+        // So, we ensure that the views are correctly bound before this call
         toggleReportMode.check(R.id.btnDaily)
         updateHeader()
     }
 
     private fun setupClicks() {
+        // Ensure the buttons are not accessed before initialization
         fetchReportButton.setOnClickListener { fetchReport() }
 
         downloadReportButton.setOnClickListener {
@@ -191,7 +211,7 @@ class MainActivity : AppCompatActivity() {
                 setLoading(true)
                 AutoAuth.ensureSignedIn()
 
-                // Fetch the download URL from the repository (Firebase backend will provide this URL ohh)
+                // Fetch the download URL from the repository (Firebase backend will provide this URL)
                 val url = repo.getDownloadUrl(storagePath) // Using the suspending function to get the URL
 
                 downloadUrl = url // Store the download URL here
@@ -232,18 +252,29 @@ class MainActivity : AppCompatActivity() {
         closePdf()
         fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
         pdfRenderer = PdfRenderer(fileDescriptor!!)
+
+        // Show the first page
+        showPage(0)
     }
 
     private fun showPage(index: Int) {
         val renderer = pdfRenderer ?: return
         if (index !in 0 until renderer.pageCount) return
 
+        // Close the previous page if it's already open
         currentPage?.close()
+
+        // Open the page at the specified index
         currentPage = renderer.openPage(index)
 
+        // Now render the page to a bitmap
         val page = currentPage ?: return
         val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+
+        // Render the page into the bitmap
         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
+        // Set the bitmap to the ImageView (pdfView)
         pdfView.setImageBitmap(bitmap)
     }
 

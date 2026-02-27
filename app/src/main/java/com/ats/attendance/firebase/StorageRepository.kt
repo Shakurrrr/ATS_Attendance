@@ -26,4 +26,13 @@ class StorageRepository(context: Context) {
 
         return cached
     }
+
+    suspend fun getDownloadUrl(storagePath: String): String {
+        return try {
+            val ref = storage.reference.child(storagePath)
+            ref.downloadUrl.await().toString() // This will return the download URL
+        } catch (e: Exception) {
+            throw Exception("Failed to fetch download URL: ${e.message}")
+        }
+    }
 }
