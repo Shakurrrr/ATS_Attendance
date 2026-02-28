@@ -23,6 +23,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Material Card View containing the PDF preview -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/previewCard"
                 android:layout_width="match_parent"
@@ -95,6 +96,7 @@
                             app:iconPadding="8dp" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
+                    <!-- Card View for PDF Preview -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
@@ -139,7 +141,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="6dp"
-                                    android:text="Tap  to preview the PDF."
+                                    android:text="Tap to preview the PDF."
                                     android:textColor="@color/text_muted"
                                     android:textSize="13sp" />
                             </LinearLayout>
@@ -153,6 +155,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Bottom Navigation Bar -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/stickyActionsCard"
         android:layout_width="match_parent"
@@ -186,17 +189,6 @@
                 android:layout_width="12dp"
                 android:layout_height="0dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/downloadReportButton"
-                style="@style/OutlinePillButton"
-                android:layout_width="0dp"
-                android:layout_height="54dp"
-                android:layout_weight="1"
-                android:text="Download"
-                android:visibility="gone"
-                app:icon="@drawable/ic_report"
-                app:iconGravity="textStart"
-                app:iconPadding="10dp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

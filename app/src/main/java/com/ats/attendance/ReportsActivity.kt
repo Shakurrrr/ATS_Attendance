@@ -3,9 +3,12 @@ package com.ats.attendance
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.view.ContextMenu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
@@ -20,12 +23,18 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textview.MaterialTextView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class ReportsActivity : AppCompatActivity() {
+
+    companion object {
+        private const val MENU_DOWNLOAD_PDF = 1001
+    }
 
     private lateinit var pdfView: ImageView
     private lateinit var fetchReportButton: MaterialButton
@@ -39,7 +48,6 @@ class ReportsActivity : AppCompatActivity() {
     private lateinit var btnWeekly: MaterialButton
 
     private lateinit var emptyState: View
-
     private lateinit var repo: StorageRepository
 
     private var currentFile: File? = null
@@ -49,7 +57,6 @@ class ReportsActivity : AppCompatActivity() {
 
     private var currentDate: LocalDate = LocalDate.now()
     private var currentMode: ReportMode = ReportMode.DAILY
-
     private val dateFmt = DateTimeFormatter.ISO_LOCAL_DATE
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +68,9 @@ class ReportsActivity : AppCompatActivity() {
         bindViews()
         setupUi()
         setupClicks()
+
+        // Long-press menu on PDF preview
+        registerForContextMenu(pdfView)
 
         lifecycleScope.launch {
             try {
@@ -91,9 +101,13 @@ class ReportsActivity : AppCompatActivity() {
     private fun setupUi() {
         bottomNav.selectedItemId = R.id.nav_reports
 
-        downloadReportButton.visibility = View.GONE
+        // Optional: keep your existing button (even if you mostly use long-press)
+        downloadReportButton.visibility = View.VISIBLE
         downloadReportButton.isEnabled = false
+
+        // Start in empty state
         emptyState.visibility = View.VISIBLE
+        pdfView.setImageDrawable(null)
 
         toggleReportMode.check(R.id.btnDaily)
         updateHeader()
@@ -102,9 +116,14 @@ class ReportsActivity : AppCompatActivity() {
     private fun setupClicks() {
         fetchReportButton.setOnClickListener { fetchReport() }
 
+        // Optional: normal button download (you can keep or remove)
         downloadReportButton.setOnClickListener {
-            currentFile?.let { downloadToPublicDownloads(it) }
-                ?: Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+            val file = currentFile
+            if (file == null || !file.exists()) {
+                Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            downloadToPublicDownloads(file)
         }
 
         toggleReportMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -146,10 +165,6 @@ class ReportsActivity : AppCompatActivity() {
     }
 
     private fun openDatePicker() {
-        val y = currentDate.year
-        val m = currentDate.monthValue - 1
-        val d = currentDate.dayOfMonth
-
         DatePickerDialog(
             this,
             { _, year, month, day ->
@@ -157,14 +172,16 @@ class ReportsActivity : AppCompatActivity() {
                 updateHeader()
                 fetchReport()
             },
-            y, m, d
+            currentDate.year,
+            currentDate.monthValue - 1,
+            currentDate.dayOfMonth
         ).show()
     }
 
     private fun setLoading(isLoading: Boolean) {
         fetchReportButton.isEnabled = !isLoading
         fetchReportButton.text = if (isLoading) "Loading..." else "Fetch"
-        downloadReportButton.isEnabled = !isLoading && currentFile != null
+        downloadReportButton.isEnabled = !isLoading && currentFile?.exists() == true
     }
 
     private fun fetchReport() {
@@ -181,26 +198,22 @@ class ReportsActivity : AppCompatActivity() {
 
                 openPdfFile(file)
                 showPage(0)
-                showDownloadButton()
+
+                // CRITICAL: hide overlay so PDF becomes visible
+                emptyState.visibility = View.GONE
+                downloadReportButton.isEnabled = true
 
                 Toast.makeText(this@ReportsActivity, "Loaded: $label", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 currentFile = null
-                downloadReportButton.visibility = View.GONE
+                downloadReportButton.isEnabled = false
+                pdfView.setImageDrawable(null)
                 emptyState.visibility = View.VISIBLE
                 Toast.makeText(this@ReportsActivity, "Report not found: $label", Toast.LENGTH_SHORT).show()
             } finally {
                 setLoading(false)
             }
         }
-    }
-
-    private fun showDownloadButton() {
-        downloadReportButton.visibility = View.VISIBLE
-        downloadReportButton.isEnabled = true
-        downloadReportButton.alpha = 0f
-        downloadReportButton.animate().alpha(1f).setDuration(200).start()
-        emptyState.visibility = View.GONE
     }
 
     private fun openPdfFile(file: File) {
@@ -217,23 +230,31 @@ class ReportsActivity : AppCompatActivity() {
         currentPage = renderer.openPage(index)
 
         val page = currentPage ?: return
+
         val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+        bitmap.eraseColor(Color.WHITE) // helps visibility
         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
         pdfView.setImageBitmap(bitmap)
     }
 
     private fun downloadToPublicDownloads(file: File) {
-        try {
-            val label = ReportPathBuilder.displayLabel(currentMode, currentDate)
-            val niceName = when (currentMode) {
-                ReportMode.DAILY -> "ATS_Daily_$label.pdf"
-                ReportMode.WEEKLY -> "ATS_Weekly_$label.pdf"
-            }
+        lifecycleScope.launch {
+            try {
+                val label = ReportPathBuilder.displayLabel(currentMode, currentDate)
+                val niceName = when (currentMode) {
+                    ReportMode.DAILY -> "ATS_Daily_$label.pdf"
+                    ReportMode.WEEKLY -> "ATS_Weekly_$label.pdf"
+                }
 
-            DownloadUtils.savePdfToDownloads(this, file, niceName)
-            Toast.makeText(this, "Saved to Downloads", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.IO) {
+                    DownloadUtils.savePdfToDownloads(this@ReportsActivity, file, niceName)
+                }
+
+                Toast.makeText(this@ReportsActivity, "Saved to Downloads", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@ReportsActivity, "Download failed: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -244,6 +265,35 @@ class ReportsActivity : AppCompatActivity() {
         pdfRenderer = null
         try { fileDescriptor?.close() } catch (_: Exception) {}
         fileDescriptor = null
+    }
+
+    // Long-press menu
+    override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+        super.onCreateContextMenu(menu, v, menuInfo)
+        if (v == pdfView) {
+            val ok = currentFile?.exists() == true
+            if (ok) {
+                menu?.add(0, MENU_DOWNLOAD_PDF, 0, "Download PDF")
+            } else {
+                menu?.add(0, MENU_DOWNLOAD_PDF, 0, "Download PDF")?.isEnabled = false
+            }
+        }
+    }
+
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            MENU_DOWNLOAD_PDF -> {
+                val file = currentFile
+                if (file == null || !file.exists()) {
+                    Toast.makeText(this, "No report to download", Toast.LENGTH_SHORT).show()
+                    true
+                } else {
+                    downloadToPublicDownloads(file)
+                    true
+                }
+            }
+            else -> super.onContextItemSelected(item)
+        }
     }
 
     override fun onDestroy() {
